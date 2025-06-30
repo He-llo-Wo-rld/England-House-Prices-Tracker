@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Region {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  properties  Property[]
+  monthlyStats RegionMonthlyStats[]
+
+  @@map("regions")
+}
+
+model Property {
+  id           String      @id @default(cuid())
+  postcode     String
+  price        Int
+  propertyType PropertyType
+  dateSold     DateTime
+  latitude     Float?
+  longitude    Float?
+  createdAt    DateTime    @default(now())
+  
+  // Relations
+  regionId     String
+  region       Region      @relation(fields: [regionId], references: [id])
+
+  @@index([postcode])
+  @@index([regionId, dateSold])
+  @@index([dateSold])
+  @@map("properties")
+}
+
+model RegionMonthlyStats {
+  id              String   @id @default(cuid())
+  month           DateTime
+  averagePrice    Int
+  medianPrice     Int
+  salesCount      Int
+  priceChangeYoY  Float    // Year over year change percentage
+  priceChangeMoM  Float    // Month over month change percentage
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Property type breakdowns
+  detachedAvg     Int?
+  semiDetachedAvg Int?
+  terracedAvg     Int?
+  flatAvg         Int?
+
+  // Relations
+  regionId        String
+  region          Region   @relation(fields: [regionId], references: [id])
+
+  @@unique([regionId, month])
+  @@index([month])
+  @@map("region_monthly_stats")
+}
+
+enum PropertyType {
+  DETACHED
+  SEMI_DETACHED
+  TERRACED
+  FLAT
+}
