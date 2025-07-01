@@ -6,9 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 interface SearchResult {
   id: string;
-  name                  className={`p-4 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
-                    index === selectedIndex ? "bg-blue-50" : "hover:bg-gray-50"
-                  }`>tring;
+  name: string;
   type: "postcode" | "region" | "property";
   description: string;
   averagePrice?: number;
@@ -58,7 +56,7 @@ export function SearchBar() {
   const performSearch = async (searchQuery: string) => {
     try {
       setLoading(true);
-      const response = await searchApi.search(searchQuery, { limit: 8 });
+      const response = await searchApi.search(searchQuery, 8);
 
       if (response.success && response.data) {
         setResults(response.data);
