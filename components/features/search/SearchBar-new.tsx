@@ -1,6 +1,6 @@
 "use client";
 
-import { search } from "@/lib/api";
+import { searchApi } from "@/lib/api";
 import { formatPrice } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 
@@ -54,13 +54,11 @@ export function SearchBar() {
       setIsLoading(true);
       setError(null);
 
-      console.log("🔍 Performing search for:", searchQuery);
-      const response = await search(searchQuery, 8);
+      const response = await searchApi.search(searchQuery, 8);
 
       if (response.success && response.data) {
         setResults(response.data);
         setIsOpen(true);
-        console.log("✅ Search results:", response.data);
       } else {
         setResults([]);
         setError("No results found");
@@ -73,7 +71,6 @@ export function SearchBar() {
       setIsLoading(false);
     }
   };
-
 
   const handleInputChange = (value: string) => {
     setQuery(value);
@@ -96,7 +93,7 @@ export function SearchBar() {
       // Navigate to postcode detail page
       window.location.href = `/postcode/${encodeURIComponent(result.name)}`;
     } else if (result.type === "region") {
-      // Navigate to region page (for future implementation)
+      // Navigate to region page
       window.location.href = `/region/${result.name.toLowerCase()}`;
     } else {
       // Handle other types
@@ -117,24 +114,24 @@ export function SearchBar() {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto" ref={searchRef}>
+    <div className="w-full max-w-lg mx-auto" ref={searchRef}>
       <form onSubmit={handleSubmit} className="relative">
         <div className="relative">
           <input
             type="text"
             value={query}
             onChange={(e) => handleInputChange(e.target.value)}
-            placeholder="Search by postcode, region, or area (e.g., LS1, London, Manchester)"
-            className="w-full px-6 py-4 text-lg rounded-2xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none bg-white shadow-lg"
+            placeholder="Search by postcode or region..."
+            className="w-full px-4 py-2.5 text-sm rounded border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
           />
 
           {/* Search Icon */}
-          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
             {isLoading ? (
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
             ) : (
               <svg
-                className="w-6 h-6 text-gray-400"
+                className="w-4 h-4 text-gray-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -152,65 +149,45 @@ export function SearchBar() {
 
         {/* Search Results Dropdown */}
         {isOpen && query.length >= 2 && (
-          <div className="absolute top-full mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-96 overflow-y-auto">
+          <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded shadow-md z-50 max-h-80 overflow-y-auto">
             {error ? (
-              <div className="p-4 text-red-600 text-center">
+              <div className="p-4 text-red-600 text-center text-sm">
                 <p>{error}</p>
               </div>
             ) : results.length > 0 ? (
-              <div className="py-2">
+              <div className="py-1">
                 {results.map((result) => (
                   <button
                     key={result.id}
                     type="button"
-                    className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                    className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                     onClick={() => handleResultClick(result)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
-                          <span className="font-semibold text-gray-900">
+                          <span className="font-medium text-gray-900 text-sm">
                             {result.name}
                           </span>
-                          <span
-                            className={`px-2 py-1 text-xs rounded-full ${
-                              result.type === "region"
-                                ? "bg-blue-100 text-blue-800"
-                                : result.type === "postcode"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
+                          <span className="px-1 py-0.5 text-xs rounded bg-gray-100 text-gray-600">
                             {result.type}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 mt-1">
                           {result.description}
                         </p>
                       </div>
 
                       {/* Price Display */}
-                      <div className="text-right ml-4">
+                      <div className="text-right ml-2">
                         {result.averagePrice && (
-                          <p className="font-semibold text-gray-900">
+                          <p className="font-medium text-gray-900 text-sm">
                             {formatPrice(result.averagePrice)}
                           </p>
                         )}
                         {result.price && (
-                          <p className="font-semibold text-gray-900">
+                          <p className="font-medium text-gray-900 text-sm">
                             {formatPrice(result.price)}
-                          </p>
-                        )}
-                        {result.priceChange && (
-                          <p
-                            className={`text-sm ${
-                              result.priceChange > 0
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }`}
-                          >
-                            {result.priceChange > 0 ? "+" : ""}
-                            {result.priceChange.toFixed(1)}%
                           </p>
                         )}
                       </div>
@@ -220,45 +197,28 @@ export function SearchBar() {
               </div>
             ) : (
               !isLoading && (
-                <div className="p-4 text-gray-500 text-center">
+                <div className="p-4 text-gray-500 text-center text-sm">
                   <p>No results found for "{query}"</p>
-                  <p className="text-sm mt-1">
-                    Try searching for a postcode like "LS1" or region like
-                    "London"
-                  </p>
                 </div>
               )
             )}
           </div>
         )}
-
-        {/* Search Button */}
-        <button
-          type="submit"
-          className="mt-4 w-full sm:w-auto px-8 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-lg"
-          disabled={!query.trim() || isLoading}
-        >
-          {isLoading ? "Searching..." : "Search Properties"}
-        </button>
       </form>
 
       {/* Quick suggestions */}
-      <div className="mt-4 text-center">
-        <p className="text-sm text-gray-500 mb-2">Popular searches:</p>
-        <div className="flex flex-wrap justify-center gap-2">
-          {["London", "Manchester", "LS1", "M1", "SW1", "Birmingham"].map(
-            (suggestion) => (
-              <button
-                key={suggestion}
-                type="button"
-                onClick={() => handleInputChange(suggestion)}
-                className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
-              >
-                {suggestion}
-              </button>
-            )
-          )}
-        </div>
+      <div className="mt-2 text-center">
+        <span className="text-xs text-gray-500 mr-2">Try:</span>
+        {["London", "Manchester", "SW1", "M1"].map((suggestion) => (
+          <button
+            key={suggestion}
+            type="button"
+            onClick={() => handleInputChange(suggestion)}
+            className="px-2 py-1 mx-1 bg-gray-100 rounded text-xs text-gray-600 hover:bg-gray-200"
+          >
+            {suggestion}
+          </button>
+        ))}
       </div>
     </div>
   );
