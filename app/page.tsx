@@ -1,161 +1,207 @@
+"use client";
+
 import { NationalStats } from "@/components/features/dashboard/NationalStats";
 import { RegionsGrid } from "@/components/features/dashboard/RegionsGrid";
-import { TrendingAreas } from "@/components/features/dashboard/TrendingAreas";
-import { SearchBar } from "@/components/features/search/SearchBar";
+import { Footer } from "@/components/layout/Footer";
+import { Navigation } from "@/components/layout/Navigation";
+import { Button } from "@/components/ui";
+import { PropertyCard } from "@/components/ui/PropertyCard";
+import { SearchTag } from "@/components/ui/SearchTag";
+import { StatCard } from "@/components/ui/StatCard";
+import { searchApi } from "@/lib/api";
+import { useState } from "react";
 
 export default function HomePage() {
+  const [results, setResults] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const popularSearches = [
+    "LS18",
+    "London",
+    "M1",
+    "Birmingham",
+    "Manchester",
+    "Leeds",
+  ];
+
+  const handleSearch = async (term: string) => {
+    if (!term.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await searchApi.search(term, 8);
+
+      if (result.success && result.data?.properties?.length > 0) {
+        setResults(result.data);
+        setError(null);
+      } else {
+        setError(
+          `No properties found for "${term}". Try: London, M1, Birmingham`
+        );
+        setResults(null);
+      }
+    } catch (err) {
+      setError("Search failed. Please try again.");
+      setResults(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <Navigation />
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            England Property Market
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Educational demo of property market interface across England
+            regions.
+          </p>
+        </div>
+
+        <div className="max-w-4xl mx-auto mb-12">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSearch(searchTerm);
+              }}
+              className="flex gap-3 mb-4"
+            >
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by postcode or region..."
+                className="flex-1 px-4 py-2.5 border border-gray-300 rounded focus:ring-1 focus:ring-gray-400 focus:border-gray-400 text-sm"
+              />
+              <Button
+                disabled={isLoading}
+                className="px-6 py-2.5 text-sm bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {isLoading ? "Searching..." : "Search"}
+              </Button>
+            </form>
+
+            <div className="flex gap-2 justify-center items-center">
+              <span className="text-xs text-gray-500">Try:</span>
+              {popularSearches.map((term) => (
+                <SearchTag
+                  key={term}
+                  onClick={() => {
+                    setSearchTerm(term);
+                    handleSearch(term);
+                  }}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                  />
-                </svg>
+                  {term}
+                </SearchTag>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="max-w-4xl mx-auto mb-8">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+              <div className="text-red-600 text-sm font-medium mb-1">
+                Search not found
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                UK House Prices
-              </h1>
-            </div>
-            <nav className="hidden md:flex space-x-6">
-              <a
-                href="#"
-                className="text-gray-600 hover:text-blue-600 font-medium"
-              >
-                Search
-              </a>
-              <a
-                href="#"
-                className="text-gray-600 hover:text-blue-600 font-medium"
-              >
-                Regions
-              </a>
-              <a
-                href="#"
-                className="text-gray-600 hover:text-blue-600 font-medium"
-              >
-                Calculator
-              </a>
-            </nav>
-          </div>
-        </div>
-      </header>
-
-      <main>
-        {/* Hero Section */}
-        <section className="py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Real-time UK House Price
-                <span className="block text-blue-600">Tracker</span>
-              </h2>
-              <p className="text-xl text-gray-600 mb-10 max-w-3xl mx-auto">
-                Get instant access to current house prices, market trends, and
-                affordability insights across the UK. Make informed property
-                decisions with live data.
-              </p>
-
-              {/* API-Connected Search Bar */}
-              <SearchBar />
+              <p className="text-red-700 text-sm">{error}</p>
             </div>
           </div>
-        </section>
+        )}
 
-        {/* API-Connected National Stats */}
-        <section className="py-12 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                UK Market Overview
-              </h3>
-              <p className="text-gray-600">
-                Latest statistics from HM Land Registry
-              </p>
+        {results?.properties && (
+          <div className="max-w-7xl mx-auto mb-16">
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="bg-gray-100 text-gray-800 p-4">
+                <h2 className="text-xl font-semibold">Search Results</h2>
+                <p className="text-gray-600 text-sm mt-1">
+                  Found {results.properties.length} properties
+                </p>
+              </div>
+
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+                  {results.properties.slice(0, 12).map((property: any) => (
+                    <PropertyCard
+                      key={property.id}
+                      postcode={property.postcode}
+                      price={property.price}
+                      propertyType={property.propertyType}
+                      region={property.region}
+                      dateSold={property.dateSold}
+                    />
+                  ))}
+                </div>
+
+                {results.statistics && (
+                  <div className="border-t pt-6">
+                    <h3 className="text-xl font-bold mb-4 text-gray-800">
+                      📊 Search Statistics
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <StatCard
+                        title="Found"
+                        value={results.statistics.totalFound}
+                      />
+                      <StatCard
+                        title="Average"
+                        value={`£${results.statistics.averagePrice?.toLocaleString()}`}
+                        color="green"
+                      />
+                      <StatCard
+                        title="Min"
+                        value={`£${results.statistics.minPrice?.toLocaleString()}`}
+                        color="purple"
+                      />
+                      <StatCard
+                        title="Max"
+                        value={`£${results.statistics.maxPrice?.toLocaleString()}`}
+                        color="red"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-
-            <NationalStats />
           </div>
-        </section>
+        )}
 
-        {/* API-Connected Regions Grid */}
-        <section className="py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">
-                England Property Market
-              </h3>
-              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                Real-time house price data across England's 9 regions. Track weekly property sales, market trends, and regional price changes with live data from the last 7 days.
-              </p>
-            </div>
-
-            <RegionsGrid />
-          </div>
-        </section>
-
-        {/* API-Connected Trending Areas */}
-        <section className="py-16 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">
-                🔥 Trending Areas
-              </h3>
-              <p className="text-xl text-gray-600">
-                Areas with the biggest price movements this month
-              </p>
-            </div>
-
-            <TrendingAreas />
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-16 bg-gradient-to-r from-blue-600 to-indigo-700">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h3 className="text-3xl font-bold text-white mb-4">
-              Stay Ahead of the Market
-            </h3>
-            <p className="text-xl text-blue-100 mb-8">
-              Get personalized alerts when prices change in your area of
-              interest
+        <div className="mb-16">
+          <div className="text-center mb-8">
+            <h2 className="text-4xl font-bold text-gray-900 mb-2">
+              📈 UK Market Overview
+            </h2>
+            <p className="text-xl text-gray-600">
+              Real-time national statistics from all regions
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-white text-blue-600 px-8 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors">
-                Set Price Alert
-              </button>
-              <button className="border-2 border-white text-white px-8 py-3 rounded-xl font-semibold hover:bg-white hover:text-blue-600 transition-colors">
-                Calculate Affordability
-              </button>
-            </div>
           </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400">
-            Data sourced from HM Land Registry. Updated monthly.
-          </p>
-          <p className="text-gray-500 text-sm mt-2">
-            © 2025 UK House Prices Tracker. Built for portfolio demonstration.
-          </p>
+          <NationalStats />
         </div>
-      </footer>
+
+        <div className="mb-16">
+          <div className="text-center mb-8">
+            <h2 className="text-4xl font-bold text-gray-900 mb-2">
+              🗺️ Regional Data
+            </h2>
+            <p className="text-xl text-gray-600">
+              Explore property prices across England&apos;s 9 regions
+            </p>
+          </div>
+          <RegionsGrid />
+        </div>
+      </div>
+
+      <Footer />
     </div>
   );
 }

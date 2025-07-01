@@ -1,5 +1,7 @@
-import { prisma } from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+
+const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,10 +41,30 @@ export async function GET(request: NextRequest) {
       });
 
       const propertyTypes = {
-        detached: propertyBreakdown.find((p) => p.propertyType === "DETACHED"),
-        semi: propertyBreakdown.find((p) => p.propertyType === "SEMI_DETACHED"),
-        terraced: propertyBreakdown.find((p) => p.propertyType === "TERRACED"),
-        flat: propertyBreakdown.find((p) => p.propertyType === "FLAT"),
+        detached: {
+          price: Math.round(
+            propertyBreakdown.find((p) => p.propertyType === "DETACHED")?._avg
+              .price || 0
+          ),
+        },
+        semi: {
+          price: Math.round(
+            propertyBreakdown.find((p) => p.propertyType === "SEMI_DETACHED")
+              ?._avg.price || 0
+          ),
+        },
+        terraced: {
+          price: Math.round(
+            propertyBreakdown.find((p) => p.propertyType === "TERRACED")?._avg
+              .price || 0
+          ),
+        },
+        flat: {
+          price: Math.round(
+            propertyBreakdown.find((p) => p.propertyType === "FLAT")?._avg
+              .price || 0
+          ),
+        },
       };
 
       return NextResponse.json({
@@ -54,29 +76,7 @@ export async function GET(request: NextRequest) {
         salesCount: region._count.properties,
         description: `Major UK region with ${region._count.properties} recorded sales`,
         lastUpdated: latestStats?.month || region.updatedAt,
-        propertyTypes: {
-          detached: {
-            price: Math.round(propertyTypes.detached?._avg.price || 0),
-            change: 0, // Would need historical data
-          },
-          semi: {
-            price: Math.round(propertyTypes.semi?._avg.price || 0),
-            change: 0,
-          },
-          terraced: {
-            price: Math.round(propertyTypes.terraced?._avg.price || 0),
-            change: 0,
-          },
-          flat: {
-            price: Math.round(propertyTypes.flat?._avg.price || 0),
-            change: 0,
-          },
-        },
-        priceHistory: region.monthlyStats.map((stat) => ({
-          month: stat.month,
-          averagePrice: stat.averagePrice,
-          salesCount: stat.salesCount,
-        })),
+        propertyTypes,
       });
     }
 
@@ -94,27 +94,34 @@ export async function GET(request: NextRequest) {
       orderBy: { name: "asc" },
     });
 
-    const regionsWithStats = regions.map((region) => ({
-      id: region.id,
-      name: region.name,
-      slug: region.slug,
-      averagePrice: region.monthlyStats[0]?.averagePrice || 0,
-      priceChange: region.monthlyStats[0]?.priceChangeYoY || 0,
-      salesCount: region._count.properties,
-      description: `${region._count.properties} properties sold`,
-      lastUpdated: region.monthlyStats[0]?.month || region.updatedAt,
-    }));
+    // Get property counts and averages for each region
+    const regionsWithStats = regions.map((region) => {
+      const latestStats = region.monthlyStats[0];
+      const averagePrice = latestStats?.averagePrice || 0;
+      const priceChange = latestStats?.priceChangeYoY || 0;
+
+      return {
+        id: region.id,
+        name: region.name,
+        slug: region.slug,
+        averagePrice,
+        priceChange,
+        salesCount: region._count.properties,
+        description: `${region._count.properties} properties sold`,
+        lastUpdated: latestStats?.month || region.updatedAt,
+      };
+    });
 
     return NextResponse.json({
+      success: true,
       regions: regionsWithStats,
-      total: regionsWithStats.length,
-      lastUpdated: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("API Error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { success: false, error: "Failed to fetch regions" },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }

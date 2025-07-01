@@ -1,3 +1,4 @@
+import { MockDataBanner } from "@/components/layout/MockDataBanner";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -5,22 +6,13 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "UK House Prices Tracker",
+  title: "PropertyMarket - England Property Data (Demo)",
   description:
-    "Track house prices across the UK with real-time data and trends",
-  keywords: [
-    "UK house prices",
-    "property tracker",
-    "real estate",
-    "housing market",
-  ],
-  authors: [{ name: "UK Property Tracker" }],
-  robots: "index, follow",
-};
-
-export const viewport = {
-  width: "device-width",
-  initialScale: 1,
+    "Demo application showing realistic UK property market data patterns across England's 9 regions",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -29,9 +21,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
+      <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="alternate icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/favicon.svg" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#3B82F6" />
+      </head>
       <body className={inter.className}>
-        <div className="min-h-screen bg-background">{children}</div>
+        <MockDataBanner />
+        {children}
       </body>
     </html>
   );

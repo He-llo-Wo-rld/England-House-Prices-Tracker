@@ -45,10 +45,9 @@ export default function PostcodePage({
     const fetchPostcodeData = async () => {
       try {
         setLoading(true);
-        console.log("🔍 Fetching postcode data for:", postcode);
 
         const response = await fetch(
-          `/api/postcode/${encodeURIComponent(postcode)}`
+          `/api/search?q=${encodeURIComponent(postcode)}`
         );
         const result = await response.json();
 
@@ -58,7 +57,7 @@ export default function PostcodePage({
           setError(result.error || "Postcode not found");
         }
       } catch (err) {
-        console.error("❌ Error fetching postcode data:", err);
+    
         setError("Failed to load postcode data");
       } finally {
         setLoading(false);

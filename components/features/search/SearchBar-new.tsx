@@ -73,6 +73,7 @@ export function SearchBar() {
       setIsLoading(false);
     }
   };
+  
 
   const handleInputChange = (value: string) => {
     setQuery(value);

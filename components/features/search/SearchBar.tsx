@@ -6,7 +6,9 @@ import { useEffect, useRef, useState } from "react";
 
 interface SearchResult {
   id: string;
-  name: string;
+  name                  className={`p-4 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
+                    index === selectedIndex ? "bg-blue-50" : "hover:bg-gray-50"
+                  }`>tring;
   type: "postcode" | "region" | "property";
   description: string;
   averagePrice?: number;
@@ -202,8 +204,8 @@ export function SearchBar() {
               {results.map((result, index) => (
                 <div
                   key={result.id}
-                  className={`p-4 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
-                    index === selectedIndex ? "bg-blue-50" : "hover:bg-gray-50"
+                  className={`p-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
+                    index === selectedIndex ? "bg-gray-50" : "hover:bg-gray-50"
                   }`}
                   onClick={() => selectResult(result)}
                 >
@@ -243,22 +245,20 @@ export function SearchBar() {
 
       {/* Popular searches */}
       {!showResults && (
-        <div className="mt-4 flex flex-wrap justify-center gap-2">
-          <span className="text-sm text-gray-500">Popular:</span>
-          {["SW1A 1AA", "London", "Manchester", "Birmingham", "M1 1AA"].map(
-            (term) => (
-              <button
-                key={term}
-                className="px-3 py-1 bg-white border border-gray-200 rounded-full text-sm text-gray-700 hover:border-blue-300 hover:text-blue-600 transition-colors"
-                onClick={() => {
-                  setQuery(term);
-                  performSearch(term);
-                }}
-              >
-                {term}
-              </button>
-            )
-          )}
+        <div className="mt-2 text-center">
+          <span className="text-xs text-gray-500 mr-2">Try:</span>
+          {["London", "Manchester", "SW1", "M1"].map((term) => (
+            <button
+              key={term}
+              className="px-2 py-1 mx-1 bg-gray-100 rounded text-xs text-gray-600 hover:bg-gray-200"
+              onClick={() => {
+                setQuery(term);
+                performSearch(term);
+              }}
+            >
+              {term}
+            </button>
+          ))}
         </div>
       )}
     </div>

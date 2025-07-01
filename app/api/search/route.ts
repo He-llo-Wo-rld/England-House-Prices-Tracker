@@ -1,170 +1,156 @@
-import { prisma } from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+
+const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("🔍 Search API called");
-
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get("q");
-    const limit = parseInt(searchParams.get("limit") || "8");
+    const query = searchParams.get("q") || searchParams.get("query");
+    const limit = parseInt(searchParams.get("limit") || "20");
 
-    console.log("🔍 Search params:", { query, limit });
-
-    if (!query || query.trim().length < 2) {
+    if (!query) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Search query must be at least 2 characters",
-          data: [],
-        },
+        { success: false, error: "Search query is required" },
         { status: 400 }
       );
     }
 
-    const searchTerm = query.trim().toLowerCase();
-    const results: any[] = [];
+    const searchTerm = query.trim();
 
-    try {
-      // 1. Search regions first
-      console.log("🏠 Searching regions...");
-      const regions = await prisma.region.findMany({
+    // Try different search strategies
+    let properties = [];
+    let regionInfo = null;
+
+    // 1. Search by postcode (exact and partial)
+    properties = await prisma.property.findMany({
+      where: {
+        postcode: {
+          contains: searchTerm.toUpperCase(),
+          mode: "insensitive",
+        },
+      },
+      include: {
+        region: true,
+      },
+      orderBy: {
+        dateSold: "desc",
+      },
+      take: limit,
+    });
+
+    // 2. If no results, try region name search
+    if (properties.length === 0) {
+      // Special city mappings
+      let regionName = null;
+      const lowerTerm = searchTerm.toLowerCase();
+
+      if (lowerTerm === "manchester") {
+        regionName = "North West";
+      } else if (lowerTerm === "birmingham") {
+        regionName = "West Midlands";
+      } else if (lowerTerm === "leeds") {
+        regionName = "Yorkshire and the Humber";
+      } else if (lowerTerm === "london") {
+        regionName = "London";
+      } else if (lowerTerm === "bristol") {
+        regionName = "South West";
+      } else if (lowerTerm === "liverpool") {
+        regionName = "North West";
+      } else {
+        regionName = searchTerm;
+      }
+
+      // Find region
+      const region = await prisma.region.findFirst({
         where: {
           OR: [
-            { name: { contains: searchTerm, mode: "insensitive" } },
-            { slug: { contains: searchTerm, mode: "insensitive" } },
+            {
+              name: {
+                equals: regionName,
+                mode: "insensitive",
+              },
+            },
+            {
+              name: {
+                contains: regionName,
+                mode: "insensitive",
+              },
+            },
           ],
         },
-        include: {
-          monthlyStats: {
-            orderBy: { month: "desc" },
-            take: 1,
+      });
+
+      if (region) {
+        // Get properties from this region
+        properties = await prisma.property.findMany({
+          where: {
+            regionId: region.id,
           },
-        },
-        take: 3,
-      });
-
-      for (const region of regions) {
-        const propertyCount = await prisma.property.count({
-          where: { regionId: region.id },
+          include: {
+            region: true,
+          },
+          orderBy: {
+            dateSold: "desc",
+          },
+          take: limit,
         });
 
-        results.push({
-          id: region.id,
+        regionInfo = {
           name: region.name,
-          type: "region",
-          description: `${propertyCount} properties • Region`,
-          averagePrice: region.monthlyStats[0]?.averagePrice || 0,
-          priceChange: region.monthlyStats[0]?.priceChangeYoY || 0,
-          salesCount: propertyCount,
-        });
+          slug: region.slug,
+          propertyCount: properties.length,
+        };
       }
-
-      console.log(`✅ Found ${regions.length} regions`);
-
-      // 2. Search postcodes
-      console.log("📮 Searching postcodes...");
-      const properties = await prisma.property.findMany({
-        where: {
-          postcode: { contains: searchTerm.toUpperCase(), mode: "insensitive" },
-        },
-        include: {
-          region: true,
-        },
-        take: 5,
-        orderBy: { dateSold: "desc" },
-      });
-
-      for (const property of properties) {
-        results.push({
-          id: `property-${property.id}`,
-          name: property.postcode,
-          type: "postcode",
-          description: `${property.propertyType} • ${property.region.name}`,
-          price: property.price,
-          propertyType: property.propertyType,
-          region: property.region.name,
-          coordinates:
-            property.latitude && property.longitude
-              ? {
-                  lat: property.latitude,
-                  lng: property.longitude,
-                }
-              : null,
-        });
-      }
-
-      console.log(`✅ Found ${properties.length} properties`);
-    } catch (searchError) {
-      console.error("❌ Database search error:", searchError);
-
-      // Fallback results if database fails
-      results.push({
-        id: "fallback-1",
-        name: "London",
-        type: "region",
-        description: "Major UK region",
-        averagePrice: 687000,
-        priceChange: 8.4,
-        salesCount: 2847,
-      });
     }
 
-    // Sort by relevance
-    results.sort((a, b) => {
-      const aExact = a.name.toLowerCase().startsWith(searchTerm);
-      const bExact = b.name.toLowerCase().startsWith(searchTerm);
+    const prices = properties.map((p) => p.price);
+    const stats = {
+      totalFound: properties.length,
+      averagePrice:
+        prices.length > 0
+          ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length)
+          : 0,
+      minPrice: prices.length > 0 ? Math.min(...prices) : 0,
+      maxPrice: prices.length > 0 ? Math.max(...prices) : 0,
+    };
 
-      if (aExact && !bExact) return -1;
-      if (!aExact && bExact) return 1;
-      return 0;
-    });
-
-    // Limit results
-    const finalResults = results.slice(0, limit);
-
-    console.log(
-      `✅ Search completed. Returning ${finalResults.length} results`
-    );
-
-    return NextResponse.json({
+    const response = {
       success: true,
-      data: finalResults,
-      meta: {
-        query: searchTerm,
-        total: finalResults.length,
-        limit,
+      query: searchTerm,
+      data: {
+        recentSales: properties.map((property) => ({
+          id: property.id,
+          postcode: property.postcode,
+          price: property.price,
+          propertyType: property.propertyType,
+          dateSold: property.dateSold,
+          latitude: property.latitude,
+          longitude: property.longitude,
+          region: property.region?.name,
+        })),
+        properties: properties.map((property) => ({
+          id: property.id,
+          postcode: property.postcode,
+          price: property.price,
+          propertyType: property.propertyType,
+          dateSold: property.dateSold,
+          latitude: property.latitude,
+          longitude: property.longitude,
+          region: property.region?.name,
+        })),
+        statistics: stats,
+        region: regionInfo,
       },
-    });
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
-    console.error("❌ Search API Critical Error:", error);
-
-    // Return minimal fallback response
-    const fallbackQuery =
-      new URL(request.url).searchParams.get("q") || "Search";
-    const fallbackLimit = parseInt(
-      new URL(request.url).searchParams.get("limit") || "8"
+    return NextResponse.json(
+      { success: false, error: "Search failed" },
+      { status: 500 }
     );
-
-    return NextResponse.json({
-      success: true,
-      data: [
-        {
-          id: "error-fallback",
-          name: fallbackQuery,
-          type: "region",
-          description: "Search temporarily unavailable",
-          averagePrice: 0,
-          priceChange: 0,
-          salesCount: 0,
-        },
-      ],
-      meta: {
-        query: fallbackQuery,
-        total: 1,
-        limit: fallbackLimit,
-        error: "Search temporarily unavailable",
-      },
-    });
+  } finally {
+    await prisma.$disconnect();
   }
 }

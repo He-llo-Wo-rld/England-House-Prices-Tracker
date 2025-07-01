@@ -1,69 +1,97 @@
 "use client";
 
-import { statsApi } from "@/lib/api";
 import { formatPrice, formatPriceChange } from "@/lib/utils";
-import { NationalStats as NationalStatsType } from "@/types/api";
 import { useEffect, useState } from "react";
+
+interface NationalStatsType {
+  averagePrice: number;
+  priceChangeYoY: number;
+  totalSales: number;
+  lastUpdated: string;
+  topPerformer: {
+    name: string;
+    region: string;
+    change: number;
+  };
+  dataSource: string;
+}
 
 export function NationalStats() {
   const [stats, setStats] = useState<NationalStatsType | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchNationalStats = async () => {
+    const fetchNationalStatsFromRegions = async () => {
       try {
         setLoading(true);
-        const response = await statsApi.getNational();
 
-        if (response.success && response.data) {
-          setStats(response.data);
-        } else {
-          throw new Error(
-            response.error || "Failed to fetch national statistics"
+        // Get data from regions API
+        const response = await fetch("/api/regions");
+        const regionsData = await response.json();
+
+        if (regionsData.success && regionsData.regions?.length > 0) {
+          const regions = regionsData.regions;
+
+          // Calculate national averages from regional data
+          const totalPrice = regions.reduce(
+            (sum: number, region: any) => sum + region.averagePrice,
+            0
           );
+          const averagePrice = Math.round(totalPrice / regions.length);
+
+          const totalSales = regions.reduce(
+            (sum: number, region: any) => sum + region.salesCount,
+            0
+          );
+
+          // Find top performer
+          const topPerformer = regions.reduce((best: any, region: any) =>
+            region.priceChange > best.priceChange ? region : best
+          );
+
+          // Calculate average price change
+          const avgPriceChange =
+            regions.reduce(
+              (sum: number, region: any) => sum + region.priceChange,
+              0
+            ) / regions.length;
+
+          const nationalStats: NationalStatsType = {
+            averagePrice,
+            priceChangeYoY: Math.round(avgPriceChange * 10) / 10,
+            totalSales,
+            lastUpdated: new Date().toISOString(),
+            topPerformer: {
+              name: topPerformer.name,
+              region: topPerformer.name,
+              change: topPerformer.priceChange,
+            },
+            dataSource: "Educational demo",
+          };
+
+          setStats(nationalStats);
         }
       } catch (err) {
         console.error("Error fetching national stats:", err);
-        setError(err instanceof Error ? err.message : "Unknown error");
-
-        // Fallback to mock data
+        // Set basic fallback if regions API fails
         setStats({
           averagePrice: 325000,
-          priceChangeYoY: 12.4,
-          priceChangeMoM: 2.1,
+          priceChangeYoY: 8.3,
           totalSales: 8847,
           lastUpdated: new Date().toISOString(),
           topPerformer: {
-            name: "Brighton & Hove",
-            region: "South East",
-            change: 18.2,
+            name: "North East",
+            region: "North East",
+            change: 11.6,
           },
-          dataSource: "HM Land Registry",
-          marketTrend: "increasing",
-          averagePriceByType: {
-            detached: 485000,
-            semi: 345000,
-            terraced: 275000,
-            flat: 235000,
-          },
-          regionalBreakdown: {
-            london: { averagePrice: 687000, change: 8.4 },
-            southeast: { averagePrice: 420000, change: 9.2 },
-            southwest: { averagePrice: 385000, change: 7.8 },
-            northwest: { averagePrice: 235000, change: 13.1 },
-            northeast: { averagePrice: 185000, change: 11.4 },
-            midlands: { averagePrice: 245000, change: 12.1 },
-            wales: { averagePrice: 215000, change: 10.8 },
-            scotland: { averagePrice: 195000, change: 9.7 },
-          },
+          dataSource: "Educational demo",
         });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchNationalStats();
+    fetchNationalStatsFromRegions();
   }, []);
 
   if (loading) {
@@ -81,23 +109,6 @@ export function NationalStats() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
-        <h3 className="text-red-800 font-semibold mb-2">
-          Error Loading Statistics
-        </h3>
-        <p className="text-red-600 text-sm">{error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
   if (!stats) {
     return (
       <div className="p-6 bg-gray-50 border border-gray-200 rounded-lg text-center">
@@ -110,7 +121,7 @@ export function NationalStats() {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {/* Average Price */}
+      {/* National Average */}
       <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
         <div className="flex items-center justify-between">
           <div>

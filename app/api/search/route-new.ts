@@ -3,13 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("🔍 Search API called");
-
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q");
     const limit = parseInt(searchParams.get("limit") || "8");
-
-    console.log("🔍 Search params:", { query, limit });
 
     if (!query || query.trim().length < 2) {
       return NextResponse.json({
@@ -23,8 +19,6 @@ export async function GET(request: NextRequest) {
     const results: any[] = [];
 
     try {
-      // 1. Search regions first
-      console.log("🏠 Searching regions...");
       const regions = await prisma.region.findMany({
         where: {
           OR: [
@@ -57,10 +51,6 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      console.log(`✅ Found ${regions.length} regions`);
-
-      // 2. Search postcodes
-      console.log("📮 Searching postcodes...");
       const properties = await prisma.property.findMany({
         where: {
           postcode: { contains: searchTerm.toUpperCase(), mode: "insensitive" },
@@ -90,11 +80,7 @@ export async function GET(request: NextRequest) {
               : null,
         });
       }
-
-      console.log(`✅ Found ${properties.length} properties`);
     } catch (searchError) {
-      console.error("❌ Database search error:", searchError);
-
       // Fallback results if database fails
       results.push({
         id: "fallback-1",
@@ -119,11 +105,6 @@ export async function GET(request: NextRequest) {
 
     // Limit results
     const finalResults = results.slice(0, limit);
-
-    console.log(
-      `✅ Search completed. Returning ${finalResults.length} results`
-    );
-
     return NextResponse.json({
       success: true,
       data: finalResults,
@@ -134,8 +115,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Search API Critical Error:", error);
-
     // Return minimal fallback response
     const fallbackQuery =
       new URL(request.url).searchParams.get("q") || "Search";
