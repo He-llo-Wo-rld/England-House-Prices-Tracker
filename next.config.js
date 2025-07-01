@@ -1,23 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    // Disable ESLint during builds to avoid deployment issues
+    // Disable ESLint during builds
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Disable TypeScript build errors
+    // Disable TypeScript errors during builds
     ignoreBuildErrors: true,
-  },
-  experimental: {
-    serverComponentsExternalPackages: ["prisma"],
-  },
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**",
-      },
-    ],
   },
 };
 
