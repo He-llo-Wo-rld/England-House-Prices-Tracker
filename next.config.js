@@ -1,13 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Completely disable ESLint and TypeScript checking during builds
   eslint: {
-    // Disable ESLint during builds
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Disable TypeScript errors during builds
     ignoreBuildErrors: true,
   },
+  // Disable experimental features that might trigger linting
+  swcMinify: true,
 };
 
 module.exports = nextConfig;
