@@ -30,9 +30,9 @@ export function DataDisclaimer() {
               <strong>not actual Land Registry data</strong>.
             </p>
             <div className="mt-3">
-              <p className="font-medium">What's included:</p>
+              <p className="font-medium">What&apos;s included:</p>{" "}
               <ul className="list-disc list-inside mt-1 space-y-1">
-                <li>Realistic price ranges for England's 9 regions</li>
+                <li>Realistic price ranges for England&apos;s 9 regions</li>
                 <li>Authentic postcode patterns and property types</li>
                 <li>Market-accurate growth rates and trends</li>
                 <li>~1,000 sample transactions updated weekly</li>
