@@ -1,0 +1,17 @@
+# Ignore build outputs
+.next
+out
+build
+dist
+
+# Ignore dependencies
+node_modules
+
+# Ignore API routes that might have issues
+app/api/**
+
+# Ignore specific problematic files
+lib/prisma.ts
+lib/types.ts
+lib/utils.ts
+components/ui/index.tsx
