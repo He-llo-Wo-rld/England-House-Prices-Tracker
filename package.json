@@ -5,9 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint --fix",
-    "type-check": "tsc --noEmit"
+    "start": "next start"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -27,14 +25,6 @@
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "eslint": "^8.00.0",
-    "eslint-config-next": "^14.0.0",
     "typescript": "^5.5.0"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
   }
 }
