@@ -24,12 +24,15 @@ export async function GET(request: NextRequest) {
 
   try {
     // Test database connection first
+    console.log("Testing database connection in regions API...");
     await prisma.$queryRaw`SELECT 1`;
+    console.log("Database connection successful");
 
     const { searchParams } = new URL(request.url);
     const regionSlug = searchParams.get("region");
 
     if (regionSlug) {
+      console.log(`Fetching specific region: ${regionSlug}`);
       // Get specific region
       const region = await prisma.region.findUnique({
         where: { slug: regionSlug },
@@ -53,40 +56,52 @@ export async function GET(request: NextRequest) {
 
       const latestStats = region.monthlyStats[0];
 
-      // Get property type breakdown
-      const propertyBreakdown = await prisma.property.groupBy({
-        by: ["propertyType"],
-        where: { regionId: region.id },
-        _avg: { price: true },
-        _count: { id: true },
-      });
-
-      const propertyTypes = {
-        detached: {
-          price: Math.round(
-            propertyBreakdown.find((p) => p.propertyType === "DETACHED")?._avg
-              .price || 0
-          ),
-        },
-        semi: {
-          price: Math.round(
-            propertyBreakdown.find((p) => p.propertyType === "SEMI_DETACHED")
-              ?._avg.price || 0
-          ),
-        },
-        terraced: {
-          price: Math.round(
-            propertyBreakdown.find((p) => p.propertyType === "TERRACED")?._avg
-              .price || 0
-          ),
-        },
-        flat: {
-          price: Math.round(
-            propertyBreakdown.find((p) => p.propertyType === "FLAT")?._avg
-              .price || 0
-          ),
-        },
+      // Get property type breakdown (with error handling)
+      let propertyTypes = {
+        detached: { price: 0 },
+        semi: { price: 0 },
+        terraced: { price: 0 },
+        flat: { price: 0 },
       };
+
+      try {
+        const propertyBreakdown = await prisma.property.groupBy({
+          by: ["propertyType"],
+          where: { regionId: region.id },
+          _avg: { price: true },
+          _count: { id: true },
+        });
+
+        propertyTypes = {
+          detached: {
+            price: Math.round(
+              propertyBreakdown.find((p: any) => p.propertyType === "DETACHED")
+                ?._avg.price || 0
+            ),
+          },
+          semi: {
+            price: Math.round(
+              propertyBreakdown.find(
+                (p: any) => p.propertyType === "SEMI_DETACHED"
+              )?._avg.price || 0
+            ),
+          },
+          terraced: {
+            price: Math.round(
+              propertyBreakdown.find((p: any) => p.propertyType === "TERRACED")
+                ?._avg.price || 0
+            ),
+          },
+          flat: {
+            price: Math.round(
+              propertyBreakdown.find((p: any) => p.propertyType === "FLAT")
+                ?._avg.price || 0
+            ),
+          },
+        };
+      } catch (propertyError) {
+        console.error("Error fetching property breakdown:", propertyError);
+      }
 
       return NextResponse.json({
         id: region.id,
@@ -102,6 +117,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all regions
+    console.log("Fetching all regions...");
     const regions = await prisma.region.findMany({
       include: {
         monthlyStats: {
@@ -115,8 +131,10 @@ export async function GET(request: NextRequest) {
       orderBy: { name: "asc" },
     });
 
+    console.log(`Found ${regions.length} regions`);
+
     // Get property counts and averages for each region
-    const regionsWithStats = regions.map((region) => {
+    const regionsWithStats = regions.map((region: any) => {
       const latestStats = region.monthlyStats[0];
       const averagePrice = latestStats?.averagePrice || 0;
       const priceChange = latestStats?.priceChangeYoY || 0;
