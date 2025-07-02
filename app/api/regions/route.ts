@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       regions: [],
-      message: "Database not configured"
+      message: "Database not configured",
     });
   }
 
@@ -18,14 +18,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       regions: [],
-      message: "Database client not available"
+      message: "Database client not available",
     });
   }
 
   try {
     // Test database connection first
     await prisma.$queryRaw`SELECT 1`;
-    
+
     const { searchParams } = new URL(request.url);
     const regionSlug = searchParams.get("region");
 
@@ -139,26 +139,32 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Database error in regions API:", error);
-    
+
     // More specific error handling
     if (error instanceof Error) {
-      if (error.message.includes('connect') || error.message.includes('timeout')) {
+      if (
+        error.message.includes("connect") ||
+        error.message.includes("timeout")
+      ) {
         return NextResponse.json(
-          { 
-            success: false, 
+          {
+            success: false,
             error: "Database connection failed",
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            details:
+              process.env.NODE_ENV === "development"
+                ? error.message
+                : undefined,
           },
           { status: 503 }
         );
       }
     }
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: "Failed to fetch regions",
-        details: process.env.NODE_ENV === 'development' ? error : undefined
+        details: process.env.NODE_ENV === "development" ? error : undefined,
       },
       { status: 500 }
     );

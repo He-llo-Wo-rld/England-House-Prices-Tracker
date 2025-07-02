@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         status: "error",
         message: "DATABASE_URL environment variable not set",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -17,13 +17,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         status: "error",
         message: "Prisma client not initialized",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
     // Test database connection
     await prisma.$queryRaw`SELECT 1 as test`;
-    
+
     // Get basic database info
     const regionCount = await prisma.region.count();
     const propertyCount = await prisma.property.count();
@@ -33,18 +33,21 @@ export async function GET(request: NextRequest) {
       message: "Database connection successful",
       data: {
         regions: regionCount,
-        properties: propertyCount
+        properties: propertyCount,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     console.error("Database health check failed:", error);
-    
-    return NextResponse.json({
-      status: "error",
-      message: error instanceof Error ? error.message : "Unknown database error",
-      timestamp: new Date().toISOString()
-    }, { status: 500 });
+
+    return NextResponse.json(
+      {
+        status: "error",
+        message:
+          error instanceof Error ? error.message : "Unknown database error",
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
 }

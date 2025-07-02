@@ -1,13 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
+    serverComponentsExternalPackages: ["@prisma/client"],
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
-      config.externals.push('@prisma/client')
+      config.externals.push("@prisma/client");
     }
-    return config
+    return config;
   },
   // Completely disable ESLint and TypeScript checking during builds
   eslint: {
@@ -22,16 +22,18 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/api/:path*',
+        source: "/api/:path*",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'no-store, max-age=0',
+            key: "Cache-Control",
+            value: "no-store, max-age=0",
           },
         ],
       },
     ];
   },
+  // Ensure Prisma works in serverless environment
+  outputFileTracing: false,
 };
 
 module.exports = nextConfig;
