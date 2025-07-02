@@ -2,6 +2,14 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
+  // Skip database operations during build time
+  if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+    return NextResponse.json({
+      success: true,
+      regions: [],
+    });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const regionSlug = searchParams.get("region");
