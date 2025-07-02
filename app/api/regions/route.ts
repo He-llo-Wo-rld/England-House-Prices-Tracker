@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
@@ -121,7 +119,5 @@ export async function GET(request: NextRequest) {
       { success: false, error: "Failed to fetch regions" },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
