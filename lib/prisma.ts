@@ -4,27 +4,31 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Create Prisma client only when DATABASE_URL is available
-function createPrismaClient() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is not defined");
-  }
-  
-  return new PrismaClient({
-    log:
-      process.env.NODE_ENV === "development"
-        ? ["query", "error", "warn"]
-        : ["error"],
-    errorFormat: "pretty",
-  });
-}
-
-// Enhanced Prisma configuration for production
+// Enhanced Prisma configuration that handles build-time gracefully
 export const prisma =
   globalForPrisma.prisma ??
-  (process.env.DATABASE_URL ? createPrismaClient() : null as any);
+  (() => {
+    // During build time, DATABASE_URL might not be available
+    if (!process.env.DATABASE_URL) {
+      console.log("DATABASE_URL not available, skipping Prisma client creation");
+      return null as any;
+    }
+
+    try {
+      return new PrismaClient({
+        log:
+          process.env.NODE_ENV === "development"
+            ? ["query", "error", "warn"]
+            : ["error"],
+        errorFormat: "pretty",
+      });
+    } catch (error) {
+      console.warn("Failed to create Prisma client:", error);
+      return null as any;
+    }
+  })();
 
 // Ensure proper connection management
-if (process.env.NODE_ENV !== "production" && process.env.DATABASE_URL) {
+if (process.env.NODE_ENV !== "production" && prisma) {
   globalForPrisma.prisma = prisma;
 }

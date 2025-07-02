@@ -2,8 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
-  // Skip database operations during build time
-  if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+  // Skip database operations during build time or when DATABASE_URL is not available
+  if (!process.env.DATABASE_URL || (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === undefined)) {
+    return NextResponse.json({
+      success: true,
+      regions: [],
+    });
+  }
+
+  // Additional check for prisma client availability
+  if (!prisma) {
     return NextResponse.json({
       success: true,
       regions: [],
