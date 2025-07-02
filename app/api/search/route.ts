@@ -1,6 +1,20 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
+// Add proper typing for the property from database
+type PropertyWithRegion = {
+  id: string;
+  postcode: string;
+  price: number;
+  propertyType: string;
+  dateSold: Date;
+  latitude: number | null;
+  longitude: number | null;
+  region?: {
+    name: string;
+  } | null;
+};
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -17,11 +31,11 @@ export async function GET(request: NextRequest) {
     const searchTerm = query.trim();
 
     // Try different search strategies
-    let properties = [];
+    let properties: PropertyWithRegion[] = [];
     let regionInfo = null;
 
     // 1. Search by postcode (exact and partial)
-    properties = await prisma.property.findMany({
+    properties = (await prisma.property.findMany({
       where: {
         postcode: {
           contains: searchTerm.toUpperCase(),
@@ -35,7 +49,7 @@ export async function GET(request: NextRequest) {
         dateSold: "desc",
       },
       take: limit,
-    });
+    })) as PropertyWithRegion[];
 
     // 2. If no results, try region name search
     if (properties.length === 0) {
@@ -81,7 +95,7 @@ export async function GET(request: NextRequest) {
 
       if (region) {
         // Get properties from this region
-        properties = await prisma.property.findMany({
+        properties = (await prisma.property.findMany({
           where: {
             regionId: region.id,
           },
@@ -92,7 +106,7 @@ export async function GET(request: NextRequest) {
             dateSold: "desc",
           },
           take: limit,
-        });
+        })) as PropertyWithRegion[];
 
         regionInfo = {
           name: region.name,
@@ -102,12 +116,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const prices = properties.map((p) => p.price);
+    const prices = properties.map((p: PropertyWithRegion) => p.price);
     const stats = {
       totalFound: properties.length,
       averagePrice:
         prices.length > 0
-          ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length)
+          ? Math.round(
+              prices.reduce((a: number, b: number) => a + b, 0) / prices.length
+            )
           : 0,
       minPrice: prices.length > 0 ? Math.min(...prices) : 0,
       maxPrice: prices.length > 0 ? Math.max(...prices) : 0,
@@ -117,7 +133,7 @@ export async function GET(request: NextRequest) {
       success: true,
       query: searchTerm,
       data: {
-        recentSales: properties.map((property) => ({
+        recentSales: properties.map((property: PropertyWithRegion) => ({
           id: property.id,
           postcode: property.postcode,
           price: property.price,
@@ -127,7 +143,7 @@ export async function GET(request: NextRequest) {
           longitude: property.longitude,
           region: property.region?.name,
         })),
-        properties: properties.map((property) => ({
+        properties: properties.map((property: PropertyWithRegion) => ({
           id: property.id,
           postcode: property.postcode,
           price: property.price,
