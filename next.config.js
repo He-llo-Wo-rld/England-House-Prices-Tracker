@@ -1,24 +1,42 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Remove problematic experimental settings
   experimental: {
-    serverComponentsExternalPackages: ["@prisma/client"],
+    // serverComponentsExternalPackages: ["@prisma/client"], // Remove this line
   },
-  webpack: (config, { isServer }) => {
-    if (isServer) {
+
+  // Keep webpack config simpler
+  webpack: (config, { isServer, dev }) => {
+    if (isServer && !dev) {
+      // Only add externals in production server builds
       config.externals.push("@prisma/client");
     }
     return config;
   },
-  // Completely disable ESLint and TypeScript checking during builds
+
+  // Remove build error ignoring - we want to see real issues
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false, // Change to false
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false, // Change to false
   },
-  // Enable SWC minification for better performance
+
+  // Enable SWC minification
   swcMinify: true,
-  // Add proper headers for database connections
+
+  // Remove problematic headers
+  // Remove outputFileTracing: false - this can cause issues
+
+  // Add proper image configuration
+  images: {
+    remotePatterns: [],
+  },
+
+  // Ensure proper static generation
+  trailingSlash: false,
+
+  // Add proper cache headers only for API routes
   async headers() {
     return [
       {
@@ -32,8 +50,6 @@ const nextConfig = {
       },
     ];
   },
-  // Ensure Prisma works in serverless environment
-  outputFileTracing: false,
 };
 
 module.exports = nextConfig;
