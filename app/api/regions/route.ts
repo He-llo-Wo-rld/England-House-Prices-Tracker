@@ -3,22 +3,29 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   // Skip database operations during build time or when DATABASE_URL is not available
-  if (!process.env.DATABASE_URL || (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === undefined)) {
+  if (!process.env.DATABASE_URL) {
+    console.log("DATABASE_URL not available");
     return NextResponse.json({
       success: true,
       regions: [],
+      message: "Database not configured"
     });
   }
 
   // Additional check for prisma client availability
   if (!prisma) {
+    console.log("Prisma client not available");
     return NextResponse.json({
       success: true,
       regions: [],
+      message: "Database client not available"
     });
   }
 
   try {
+    // Test database connection first
+    await prisma.$queryRaw`SELECT 1`;
+    
     const { searchParams } = new URL(request.url);
     const regionSlug = searchParams.get("region");
 
@@ -131,8 +138,28 @@ export async function GET(request: NextRequest) {
       regions: regionsWithStats,
     });
   } catch (error) {
+    console.error("Database error in regions API:", error);
+    
+    // More specific error handling
+    if (error instanceof Error) {
+      if (error.message.includes('connect') || error.message.includes('timeout')) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: "Database connection failed",
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+          },
+          { status: 503 }
+        );
+      }
+    }
+    
     return NextResponse.json(
-      { success: false, error: "Failed to fetch regions" },
+      { 
+        success: false, 
+        error: "Failed to fetch regions",
+        details: process.env.NODE_ENV === 'development' ? error : undefined
+      },
       { status: 500 }
     );
   }

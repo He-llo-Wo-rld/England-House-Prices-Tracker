@@ -9,11 +9,6 @@ const nextConfig = {
     }
     return config
   },
-  // Skip database validation during build
-  skipTrailingSlashRedirect: true,
-  async generateBuildId() {
-    return 'build-' + Date.now()
-  },
   // Completely disable ESLint and TypeScript checking during builds
   eslint: {
     ignoreDuringBuilds: true,
@@ -21,8 +16,22 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Disable experimental features that might trigger linting
+  // Enable SWC minification for better performance
   swcMinify: true,
+  // Add proper headers for database connections
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
