@@ -16,24 +16,20 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(12);
 
-  const popularSearches = [
-    "LS18",
-    "London",
-    "M1",
-    "Birmingham",
-    "Manchester",
-    "Leeds",
-  ];
+  const popularSearches = ["LS18", "M1", "SW1", "SE1", "RG1", "BS1", "B1"];
 
   const handleSearch = async (term: string) => {
     if (!term.trim()) return;
 
     setIsLoading(true);
     setError(null);
+    setCurrentPage(1); // Reset to first page when searching
 
     try {
-      const result = await searchApi.search(term, 8);
+      const result = await searchApi.search(term, 200); // Fetch more results for pagination
 
       if (result.success && result.data?.properties?.length > 0) {
         setResults(result.data);
@@ -126,22 +122,134 @@ export default function HomePage() {
                 <h2 className="text-xl font-semibold">Search Results</h2>
                 <p className="text-gray-600 text-sm mt-1">
                   Found {results.properties.length} properties
+                  {results.properties.length > itemsPerPage && (
+                    <span className="ml-1">
+                      (showing{" "}
+                      {Math.min(
+                        (currentPage - 1) * itemsPerPage + 1,
+                        results.properties.length
+                      )}
+                      -
+                      {Math.min(
+                        currentPage * itemsPerPage,
+                        results.properties.length
+                      )}
+                      )
+                    </span>
+                  )}
                 </p>
               </div>
 
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-                  {results.properties.slice(0, 12).map((property: any) => (
-                    <PropertyCard
-                      key={property.id}
-                      postcode={property.postcode}
-                      price={property.price}
-                      propertyType={property.propertyType}
-                      region={property.region}
-                      dateSold={property.dateSold}
-                    />
-                  ))}
+                  {results.properties
+                    .slice(
+                      (currentPage - 1) * itemsPerPage,
+                      currentPage * itemsPerPage
+                    )
+                    .map((property: any) => (
+                      <PropertyCard
+                        key={property.id}
+                        postcode={property.postcode}
+                        price={property.price}
+                        propertyType={property.propertyType}
+                        region={property.region}
+                        dateSold={property.dateSold}
+                      />
+                    ))}
                 </div>
+
+                {/* Pagination Controls */}
+                {results.properties.length > itemsPerPage && (
+                  <div className="flex items-center justify-between border-t pt-6">
+                    <div className="text-sm text-gray-500">
+                      Showing{" "}
+                      {Math.min(
+                        (currentPage - 1) * itemsPerPage + 1,
+                        results.properties.length
+                      )}{" "}
+                      to{" "}
+                      {Math.min(
+                        currentPage * itemsPerPage,
+                        results.properties.length
+                      )}{" "}
+                      of {results.properties.length} results
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      >
+                        Previous
+                      </button>
+
+                      <div className="flex space-x-1">
+                        {Array.from(
+                          {
+                            length: Math.ceil(
+                              results.properties.length / itemsPerPage
+                            ),
+                          },
+                          (_, i) => i + 1
+                        )
+                          .filter((page) => {
+                            const totalPages = Math.ceil(
+                              results.properties.length / itemsPerPage
+                            );
+                            if (totalPages <= 7) return true;
+                            if (page === 1 || page === totalPages) return true;
+                            if (
+                              page >= currentPage - 1 &&
+                              page <= currentPage + 1
+                            )
+                              return true;
+                            return false;
+                          })
+                          .map((page, index, array) => (
+                            <div key={page} className="flex items-center">
+                              {index > 0 && array[index - 1] !== page - 1 && (
+                                <span className="px-2 text-gray-400">...</span>
+                              )}
+                              <button
+                                onClick={() => setCurrentPage(page)}
+                                className={`px-3 py-1 rounded text-sm ${
+                                  currentPage === page
+                                    ? "bg-blue-600 text-white"
+                                    : "border border-gray-300 hover:bg-gray-50"
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(
+                              prev + 1,
+                              Math.ceil(
+                                results.properties.length / itemsPerPage
+                              )
+                            )
+                          )
+                        }
+                        disabled={
+                          currentPage ===
+                          Math.ceil(results.properties.length / itemsPerPage)
+                        }
+                        className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {results.statistics && (
                   <div className="border-t pt-6">
