@@ -1,19 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { PropertyWithRegion } from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
-
-// Add proper typing for the property from database
-type PropertyWithRegion = {
-  id: string;
-  postcode: string;
-  price: number;
-  propertyType: string;
-  dateSold: Date;
-  latitude: number | null;
-  longitude: number | null;
-  region?: {
-    name: string;
-  } | null;
-};
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,7 +17,6 @@ export async function GET(request: NextRequest) {
 
     const searchTerm = query.trim();
 
-    // Try different search strategies
     let properties: PropertyWithRegion[] = [];
     let regionInfo = null;
 
@@ -53,7 +39,6 @@ export async function GET(request: NextRequest) {
 
     // 2. If no results, try region name search
     if (properties.length === 0) {
-      // Special city mappings
       let regionName = null;
       const lowerTerm = searchTerm.toLowerCase();
 

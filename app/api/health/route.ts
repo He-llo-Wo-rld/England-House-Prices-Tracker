@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if DATABASE_URL is configured
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({
         status: "error",
@@ -12,7 +11,6 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Check if Prisma client is available
     if (!prisma) {
       return NextResponse.json({
         status: "error",
@@ -21,10 +19,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Test database connection
     await prisma.$queryRaw`SELECT 1 as test`;
-
-    // Get basic database info
     const regionCount = await prisma.region.count();
     const propertyCount = await prisma.property.count();
 

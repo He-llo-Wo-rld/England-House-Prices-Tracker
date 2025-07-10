@@ -64,3 +64,16 @@ export interface SearchResult {
     lng: number;
   };
 }
+
+export type PropertyWithRegion = {
+  id: string;
+  postcode: string;
+  price: number;
+  propertyType: string;
+  dateSold: Date;
+  latitude: number | null;
+  longitude: number | null;
+  region?: {
+    name: string;
+  } | null;
+};

@@ -2,9 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
-  // Skip database operations during build time or when DATABASE_URL is not available
+
   if (!process.env.DATABASE_URL) {
-    console.log("DATABASE_URL not available");
     return NextResponse.json({
       success: true,
       regions: [],
@@ -12,9 +11,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Additional check for prisma client availability
   if (!prisma) {
-    console.log("Prisma client not available");
     return NextResponse.json({
       success: true,
       regions: [],
@@ -23,23 +20,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Test database connection first
-    console.log("Testing database connection in regions API...");
+  
     await prisma.$queryRaw`SELECT 1`;
-    console.log("Database connection successful");
 
     const { searchParams } = new URL(request.url);
     const regionSlug = searchParams.get("region");
 
     if (regionSlug) {
-      console.log(`Fetching specific region: ${regionSlug}`);
-      // Get specific region
       const region = await prisma.region.findUnique({
         where: { slug: regionSlug },
         include: {
           monthlyStats: {
             orderBy: { month: "desc" },
-            take: 12, // Last 12 months
+            take: 12,
           },
           _count: {
             select: { properties: true },
@@ -56,7 +49,6 @@ export async function GET(request: NextRequest) {
 
       const latestStats = region.monthlyStats[0];
 
-      // Get property type breakdown (with error handling)
       let propertyTypes = {
         detached: { price: 0 },
         semi: { price: 0 },
@@ -116,8 +108,6 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get all regions
-    console.log("Fetching all regions...");
     const regions = await prisma.region.findMany({
       include: {
         monthlyStats: {
@@ -131,9 +121,6 @@ export async function GET(request: NextRequest) {
       orderBy: { name: "asc" },
     });
 
-    console.log(`Found ${regions.length} regions`);
-
-    // Get property counts and averages for each region
     const regionsWithStats = regions.map((region: any) => {
       const latestStats = region.monthlyStats[0];
       const averagePrice = latestStats?.averagePrice || 0;
@@ -156,9 +143,7 @@ export async function GET(request: NextRequest) {
       regions: regionsWithStats,
     });
   } catch (error) {
-    console.error("Database error in regions API:", error);
 
-    // More specific error handling
     if (error instanceof Error) {
       if (
         error.message.includes("connect") ||
