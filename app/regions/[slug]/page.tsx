@@ -4,55 +4,11 @@ import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
 import { formatDate, formatPrice, formatPriceChange } from "@/utils/formatters";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-
-interface RegionDetail {
-  id: string;
-  name: string;
-  slug: string;
-  averagePrice: number;
-  priceChange: number;
-  salesCount: number;
-  description: string;
-  lastUpdated: string;
-  propertyTypes: {
-    detached: { price: number };
-    semi: { price: number };
-    terraced: { price: number };
-    flat: { price: number };
-  };
-}
+import { useRegionSlug } from "../hooks/useRegionSlug";
 
 export default function RegionPage() {
   const params = useParams();
-  const [region, setRegion] = useState<RegionDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchRegion = async () => {
-      if (!params.slug) return;
-
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/regions?region=${params.slug}`);
-        const data = await response.json();
-
-        if (response.ok && data) {
-          setRegion(data);
-          setError(null);
-        } else {
-          setError("Region not found");
-        }
-      } catch (err) {
-        setError("Failed to load region data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRegion();
-  }, [params.slug]);
+  const { region, loading, error } = useRegionSlug(params.slug);
 
   if (loading) {
     return (
