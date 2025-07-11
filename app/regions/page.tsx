@@ -1,7 +1,6 @@
 "use client";
 
-import { Footer } from "@/components/layout/Footer";
-import { Navigation } from "@/components/layout/Navigation";
+import { Footer, Navigation } from "@/components/layout";
 import { formatPriceChange } from "@/utils/formatters";
 import Link from "next/link";
 import {

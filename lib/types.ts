@@ -1,5 +1,3 @@
-// Simplified types - removed unused interfaces
-
 export interface PropertyData {
   id: string;
   postcode: string;

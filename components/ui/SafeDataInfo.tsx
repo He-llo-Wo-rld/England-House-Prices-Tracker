@@ -31,7 +31,6 @@ export function SafeDataInfo({
   );
 }
 
-// Alternative compact version
 export function CompactDataInfo() {
   return (
     <div className="inline-flex items-center space-x-2 text-sm text-gray-500">

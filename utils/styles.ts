@@ -1,4 +1,4 @@
-// Reusable CSS class constants
+
 export const CONTAINER_STYLES = {
   page: "min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100",
   section: "container mx-auto px-4 py-8",

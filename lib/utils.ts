@@ -20,7 +20,6 @@ export function formatPercentage(value: number): string {
   return `${sign}${value.toFixed(1)}%`;
 }
 
-// Price change formatting
 export function formatPriceChange(change: number): {
   formatted: string;
   color: string;
@@ -40,13 +39,11 @@ export function formatPriceChange(change: number): {
   };
 }
 
-// Postcode validation
 export function isValidPostcode(postcode: string): boolean {
   const postcodeRegex = /^[A-Z]{1,2}[0-9]{1,2}[A-Z]?\s?[0-9][A-Z]{2}$/i;
   return postcodeRegex.test(postcode.trim());
 }
 
-// Date formatting (hydration-safe)
 export function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   const months = [
@@ -67,7 +64,6 @@ export function formatDate(date: Date | string): string {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// Format numbers consistently (hydration-safe)
 export function formatNumber(num: number): string {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }

@@ -1,4 +1,4 @@
-// Utility functions for formatting prices and changes
+
 export const formatPrice = (price: number): string => {
   if (price >= 1000000) return `£${(price / 1000000).toFixed(1)}M`;
   if (price >= 1000) return `£${Math.round(price / 1000)}k`;

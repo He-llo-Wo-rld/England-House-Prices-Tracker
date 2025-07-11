@@ -72,8 +72,6 @@ export function NationalStats() {
           setStats(nationalStats);
         }
       } catch (err) {
-        console.error("Error fetching national stats:", err);
-        // Set basic fallback if regions API fails
         setStats({
           averagePrice: 325000,
           priceChangeYoY: 8.3,
