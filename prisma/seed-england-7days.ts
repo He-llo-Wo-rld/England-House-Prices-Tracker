@@ -1,8 +1,9 @@
 import { PrismaClient, PropertyType } from "@prisma/client";
 
+//npx tsx prisma/seed-england-7days.ts
+
 const prisma = new PrismaClient();
 
-// England only - 9 regions
 const englandRegions = [
   {
     name: "London",
@@ -69,7 +70,6 @@ const englandRegions = [
   },
 ];
 
-// Realistic England property prices
 const getEnglandPrices = (slug: string) => {
   const prices: Record<string, { min: number; max: number }> = {
     london: { min: 400000, max: 2000000 },
@@ -85,7 +85,6 @@ const getEnglandPrices = (slug: string) => {
   return prices[slug] || { min: 150000, max: 400000 };
 };
 
-// England YoY growth rates (2025)
 const englandGrowthRates: Record<string, number> = {
   london: 6.2,
   "south-east": 5.8,
@@ -98,35 +97,32 @@ const englandGrowthRates: Record<string, number> = {
   "north-east": 11.2,
 };
 
-// Calculate realistic properties per region based on actual market share
 const getPropertiesPerRegion = (
   regionSlug: string,
   totalProperties: number
 ) => {
   const marketShare: Record<string, number> = {
-    london: 0.19, // 19% - highest volume
-    "south-east": 0.17, // 17%
-    "north-west": 0.14, // 14%
-    "yorkshire-humber": 0.11, // 11%
-    "west-midlands": 0.1, // 10%
-    "east-england": 0.09, // 9%
-    "south-west": 0.08, // 8%
-    "east-midlands": 0.07, // 7%
-    "north-east": 0.05, // 5% - lowest volume
+    london: 0.19,
+    "south-east": 0.17,
+    "north-west": 0.14,
+    "yorkshire-humber": 0.11,
+    "west-midlands": 0.1,
+    "east-england": 0.09,
+    "south-west": 0.08,
+    "east-midlands": 0.07,
+    "north-east": 0.05,
   };
 
   return Math.round(totalProperties * (marketShare[regionSlug] || 0.08));
 };
 
 async function main() {
-  // 📅 DYNAMIC DATE CALCULATION - Last 7 days
-  const endDate = new Date(); // Today
+  const endDate = new Date();
   const startDate = new Date();
-  startDate.setDate(endDate.getDate() - 7); // 7 days ago
+  startDate.setDate(endDate.getDate() - 7);
 
   const formatDate = (date: Date) => date.toISOString().split("T")[0];
 
-  console.log("🏴󠁧󠁢󠁥󠁮󠁧󠁿 SEEDING ENGLAND - LAST 7 DAYS DATA");
   console.log(`📅 Period: ${formatDate(startDate)} to ${formatDate(endDate)}`);
   console.log("");
 
@@ -159,11 +155,9 @@ async function main() {
     PropertyType.FLAT,
   ];
 
-  // Target: ~1000 properties total (realistic weekly sample)
   const totalWeeklyProperties = 1000;
   let totalGenerated = 0;
 
-  // Generate properties for each region
   for (const region of createdRegions) {
     const regionProperties = getPropertiesPerRegion(
       region.slug,
@@ -190,25 +184,20 @@ async function main() {
         priceRange.min + Math.random() * (priceRange.max - priceRange.min);
       const price = Math.round(basePrice * typeMultiplier[propertyType]);
 
-      // ⏰ RANDOM DATE within last 7 days
       const dateSold = new Date(
         startDate.getTime() +
           Math.random() * (endDate.getTime() - startDate.getTime())
       );
 
-      // Realistic coordinates with variation
       const lat = region.lat + (Math.random() - 0.5) * 0.08;
       const lng = region.lng + (Math.random() - 0.5) * 0.08;
 
-      // Generate realistic postcodes with more variety
       const getRealisticPostcode = (
         basePostcode: string,
         index: number,
         regionSlug: string
       ) => {
-        // Special handling for major cities with multiple postcode areas
         if (regionSlug === "yorkshire-humber") {
-          // Leeds postcodes: LS1-LS28, plus some Bradford BD postcodes
           const leedsCodes = [
             "LS1",
             "LS2",
@@ -266,7 +255,6 @@ async function main() {
         }
 
         if (regionSlug === "london") {
-          // London postcodes: SW, SE, N, E, W, NW, etc.
           const londonAreas = [
             "SW1",
             "SW2",
@@ -308,7 +296,6 @@ async function main() {
         }
 
         if (regionSlug === "north-west") {
-          // Manchester postcodes: M1-M99, plus some Liverpool L postcodes
           const manchesterCodes = [
             "M1",
             "M2",
@@ -387,7 +374,6 @@ async function main() {
         }
 
         if (regionSlug === "west-midlands") {
-          // Birmingham postcodes: B1-B99, plus some Coventry CV postcodes
           const birminghamCodes = [
             "B1",
             "B2",
@@ -485,7 +471,6 @@ async function main() {
           )}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`;
         }
 
-        // Default postcode generation for other regions
         const variations = [
           `${basePostcode.substring(0, 3)}${
             (index % 9) + 1
@@ -517,7 +502,6 @@ async function main() {
 
     totalGenerated += regionProperties;
 
-    // Create weekly stats for this region
     console.log(`📊 Creating weekly stats for ${region.name}...`);
 
     const weeklyAvg = await prisma.property.aggregate({
@@ -537,7 +521,6 @@ async function main() {
     const yoyGrowth =
       englandGrowthRates[region.slug] + (Math.random() - 0.5) * 1.5;
 
-    // Create monthly stats (current month)
     const currentMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
 
     await prisma.regionMonthlyStats.create({
@@ -546,7 +529,7 @@ async function main() {
         month: currentMonth,
         averagePrice: avgPrice,
         medianPrice: Math.round(avgPrice * 0.94),
-        salesCount: Math.round(salesCount * 4.3), // Weekly to monthly estimate
+        salesCount: Math.round(salesCount * 4.3),
         priceChangeYoY: yoyGrowth,
         priceChangeMoM: (Math.random() - 0.5) * 2.5,
         detachedAvg: Math.round(avgPrice * 1.5),
@@ -577,13 +560,7 @@ async function main() {
   console.log(`• ⚡ Load time: ~${Math.round(totalGenerated / 10)}ms`);
   console.log("");
   console.log("🔄 Data updates automatically based on current date!");
-  console.log("📈 Realistic market distribution by region");
-  console.log("");
-  console.log("🔍 Next steps:");
-  console.log("• npm run dev - Start the app");
-  console.log("• Search: London, M1, LS1, Birmingham, etc.");
-  console.log("");
-  console.log("💰 Cost: £0.00 (Static data)");
+
 }
 
 main()
@@ -594,3 +571,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
